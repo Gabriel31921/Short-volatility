@@ -10,12 +10,6 @@ from datetime import datetime
 end = datetime.now().strftime('%Y-%m-%d')
 etf_data = {}
 
-### Important!!
-# Somehow, somewhy, this code raises an error about columns not being there or ETF being delisted.
-# Don't mind the error, run it again. I don't know why it does that, but it does.
-# Once you run it again, the code should work. Should.
-
-
 tickers = ['SPY', 'QQQ', 'IWM', 'DIA', 'VOO', 'EEM', 'EFA', 'MDY', 'IJH', 'IJR',
         'XLE', 'XLF', 'XLK', 'XLV', 'XLY', 'XLP', 'XLI', 'XLU', 'XLB', 'XLRE',
         'VWO', 'FXI', 'EWY', 'EWJ', 'EWZ', 'EWW', 'EWG', 'INDA', 'FEZ', 'EWH',
@@ -108,6 +102,7 @@ for index, etf_info in etf_data.items():
     std = filtered_data['Forecast_Move_abs'].std()
 
     results.append({
+        "ETF_ID": index,                     #Unique identifier for the ETF
         "ETF_Name": name,              #ETF ticker name
         "Mean_Forecast_Move": mean,  #Mean of Forecast_Move_asb
         "Median_Forecast_Move": median,  #Median of Forecast_Move_asb
@@ -121,9 +116,6 @@ pd.set_option('display.max_columns', None)  #Show all columns
 
 print(summary_table)
 summary_table.to_excel('Summary table.xlsx')
-
-data = etf_data[1]['data']
-filtered_data = data[data['Signal_1'] == 1]
 
 print(f'The number of days of the initial data is of: {len(data)}\n'
       f'The number of possible signals inside said days is of: {len(filtered_data)}\n'
