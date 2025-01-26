@@ -10,6 +10,12 @@ from datetime import datetime
 end = datetime.now().strftime('%Y-%m-%d')
 etf_data = {}
 
+### Important!!
+# Somehow, somewhy, this code raises an error about columns not being there or ETF being delisted.
+# Don't mind the error, run it again. I don't know why it does that, but it does.
+# Once you run it again, the code should work. Should.
+
+
 tickers = ['SPY', 'QQQ', 'IWM', 'DIA', 'VOO', 'EEM', 'EFA', 'MDY', 'IJH', 'IJR',
         'XLE', 'XLF', 'XLK', 'XLV', 'XLY', 'XLP', 'XLI', 'XLU', 'XLB', 'XLRE',
         'VWO', 'FXI', 'EWY', 'EWJ', 'EWZ', 'EWW', 'EWG', 'INDA', 'FEZ', 'EWH',
@@ -102,7 +108,6 @@ for index, etf_info in etf_data.items():
     std = filtered_data['Forecast_Move_abs'].std()
 
     results.append({
-        "ETF_ID": index,                     #Unique identifier for the ETF
         "ETF_Name": name,              #ETF ticker name
         "Mean_Forecast_Move": mean,  #Mean of Forecast_Move_asb
         "Median_Forecast_Move": median,  #Median of Forecast_Move_asb
@@ -115,9 +120,40 @@ pd.set_option('display.max_rows', None)  #Show all rows
 pd.set_option('display.max_columns', None)  #Show all columns
 
 print(summary_table)
-summary_table.to_excel('Summary table.xlsx')
+#summary_table.to_excel('Summary table.xlsx')
+
+data = etf_data[1]['data'] #This is for the first ETF, could be anyone, I did the first because SPY has a long history.
+filtered_data = data[data['Signal_1'] == 1]
 
 print(f'The number of days of the initial data is of: {len(data)}\n'
       f'The number of possible signals inside said days is of: {len(filtered_data)}\n'
-      f'Keep in both numbers may vary with the ETF selection.')
+      f'Keep in mind both numbers may vary with the ETF selection.')
 
+### I'm gonna practice a simple escenario with straddle prices as of 26/01 with SPY and the distribution of moves.
+#def straddle_profit(move, asset):
+#    # Define premiums and strike
+#    premiums = {
+#        'P1': 4.51,  # Call premium
+#        'P2': 3.55   # Put premium
+#    }
+#    strike = 607  # Strike price (same for call and put)
+#
+#    # Calculate move value
+#    move_value = (move/100 + 1) * asset  # Move percentage applied to the asset price
+#
+#    # Compute profit
+#    call_profit = max(move_value - strike, 0)  # Profit from the call
+#    put_profit = max(strike - move_value, 0)   # Profit from the put
+#    total_premiums = premiums['P1'] + premiums['P2']  # Total cost of the straddle
+#
+#    # Adjust for contract size (100 shares) and subtract premiums
+#    profit = (-call_profit - put_profit + total_premiums) * 100
+#
+#    return profit
+
+# Compute profits for all forecasted moves in the dataset
+#profits = [straddle_profit(filtered_data.iloc[i]['Forecast_Move'], 607.47) for i in range(len(filtered_data))]
+# Calculate the expected value
+#expected_value = np.mean(profits)
+
+#print(f"Expected value of the SPY straddle: {expected_value:.2f}")
