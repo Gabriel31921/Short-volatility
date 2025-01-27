@@ -1,4 +1,6 @@
 import datetime
+import pickle
+import os
 
 import pandas as pd
 import numpy as np
@@ -119,41 +121,69 @@ summary_table = pd.DataFrame(results)
 pd.set_option('display.max_rows', None)  #Show all rows
 pd.set_option('display.max_columns', None)  #Show all columns
 
-print(summary_table)
+#print(summary_table)
 #summary_table.to_excel('Summary table.xlsx')
 
-data = etf_data[1]['data'] #This is for the first ETF, could be anyone, I did the first because SPY has a long history.
+data = etf_data[1]['data'] #This is for the first ETF, could be any number between 1 and 99. The number is a manually setted index, it does not start in 0.
 filtered_data = data[data['Signal_1'] == 1]
+
+x = 1 #More tests :)
+if x == 0:
+    print(filtered_data.head())
+    x+=1
 
 print(f'The number of days of the initial data is of: {len(data)}\n'
       f'The number of possible signals inside said days is of: {len(filtered_data)}\n'
       f'Keep in mind both numbers may vary with the ETF selection.')
 
 ### I'm gonna practice a simple escenario with straddle prices as of 26/01 with SPY and the distribution of moves.
-#def straddle_profit(move, asset):
-#    # Define premiums and strike
-#    premiums = {
-#        'P1': 4.51,  # Call premium
-#        'P2': 3.55   # Put premium
-#    }
-#    strike = 607  # Strike price (same for call and put)
-#
-#    # Calculate move value
-#    move_value = (move/100 + 1) * asset  # Move percentage applied to the asset price
-#
-#    # Compute profit
-#    call_profit = max(move_value - strike, 0)  # Profit from the call
-#    put_profit = max(strike - move_value, 0)   # Profit from the put
-#    total_premiums = premiums['P1'] + premiums['P2']  # Total cost of the straddle
-#
-#    # Adjust for contract size (100 shares) and subtract premiums
-#    profit = (-call_profit - put_profit + total_premiums) * 100
-#
-#    return profit
+x = 1 #Again, testing variable.
+if x == 0:
+    def straddle_profit(move, asset):
+        # Define premiums and strike
+        premiums = {
+            'P1': 4.51,  # Call premium
+            'P2': 3.55   # Put premium
+        }
+        strike = 607  # Strike price (same for call and put)
+    
+        # Calculate move value
+        move_value = (move/100 + 1) * asset  # Move percentage applied to the asset price
+    
+        # Compute profit
+        call_profit = max(move_value - strike, 0)  # Profit from the call
+        put_profit = max(strike - move_value, 0)   # Profit from the put
+        total_premiums = premiums['P1'] + premiums['P2']  # Total cost of the straddle
+    
+        # Adjust for contract size (100 shares) and subtract premiums
+        profit = (-call_profit - put_profit + total_premiums) * 100
+    
+        return profit
 
-# Compute profits for all forecasted moves in the dataset
-#profits = [straddle_profit(filtered_data.iloc[i]['Forecast_Move'], 607.47) for i in range(len(filtered_data))]
-# Calculate the expected value
-#expected_value = np.mean(profits)
+    x+=1
+    #Compute profits for all forecasted moves in the dataset
+    profits = [straddle_profit(filtered_data.iloc[i]['Forecast_Move'], 607.47) for i in range(len(filtered_data))]
+    #Calculate the expected value
+    expected_value = np.mean(profits)
 
-#print(f"Expected value of the SPY straddle: {expected_value:.2f}")
+    print(f"Expected value of the SPY straddle: {expected_value:.2f}")
+
+ETF_filtered = {}
+
+for index, etf_info in etf_data.items():
+    name = etf_info['ticker']
+    data = etf_info['data']
+
+    filtered_data = data[data['Signal_1'] == 1]
+
+    filtered_data = filtered_data.loc[:, filtered_data.columns.intersection(['Date', 'Close', 'Future_Close', 'Forecast_Move'])]
+
+    ETF_filtered[name] = filtered_data
+
+print(ETF_filtered['SPY'].head())
+
+Path = os.getenv("Short_Volatility_Path") #Personal path...
+Path = os.path.join(Path, "ETF_filtered.pkl")
+#with open(Path, 'wb') as f:
+#    pickle.dump(ETF_filtered, f)
+
