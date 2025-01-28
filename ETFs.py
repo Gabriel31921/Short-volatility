@@ -13,7 +13,7 @@ end = datetime.now().strftime('%Y-%m-%d')
 etf_data = {}
 
 ### Important!!
-# Somehow, somewhy, this code raises an error about columns not being there or ETF being delisted.
+# Somehow, somewhy, this code raises an error about columns not being there or ETF being delisted or something else.
 # Don't mind the error, run it again. I don't know why it does that, but it does.
 # Once you run it again, the code should work. Should.
 
@@ -51,7 +51,7 @@ for idx, ticker in enumerate(tickers, start=1):
 vol_window = 7 #Number of periods for vol calculations.
 mom_window = 7 #Number of periods for momentum calculations.
 for_window = 7 #Number of periods for the forecasting.
-mom_1 = 1 #First momentum thresold, in percentages of move.
+mom_1 = 2 #First momentum thresold, in percentages of move.
 
 x = 0 #This varible is for testing.
 
