@@ -18,16 +18,16 @@ Path = os.path.join(Path, "ETF_filtered.pkl")
 with open(Path, 'rb') as f:
     ETF_filtered = pickle.load(f)
 
-ETF_filtered_2024 = {}
+ETF_filtered_2023 = {}
 
 for ticker, df in ETF_filtered.items():
     df = df.reset_index()
     # Filter for rows where the year is 2024
-    df_filtered = df[df["Date"].dt.year == 2024]
+    df_filtered = df[df["Date"].dt.year >= 2023]
     # Update the new dictionary
-    ETF_filtered_2024[ticker] = df_filtered.copy()
+    ETF_filtered_2023[ticker] = df_filtered.copy()
     
-print(ETF_filtered_2024['SPY'])
+print(ETF_filtered_2023['SPY'])
 
 ### To do:
 # Call the API of Polygon.io. The parameter of expiration date will be equal to 7 days later than the Date in each row of df_filtered.
@@ -40,7 +40,7 @@ print(ETF_filtered_2024['SPY'])
 # Get the Close and the Volume of the option.
 # Do this for both Puts and Calls.
 # 
-# Calculate for each pair of prices, the PL from the position. Future_Close is in the df in ETF_filtered_2024.
+# Calculate for each pair of prices, the PL from the position. Future_Close is in the df in ETF_filtered_2023.
 # Do this for every signal in the year. Compute the total PL and EV. Graph such.
 # Do this for every ETF in the list. 
 # Get criteria for leaving ETFs out. 
@@ -55,10 +55,7 @@ Daily_OC = "/v1/open-close/"
 
 headers = {"Authorization" : f"{POLYGON_API_KEY}"}
 
-from datetime import timedelta
-import time
-
-for ticker, data in ETF_filtered_2024.items():
+for ticker, data in ETF_filtered_2023.items():
     Calls = []
     Puts = []
     Calls_Price = []
