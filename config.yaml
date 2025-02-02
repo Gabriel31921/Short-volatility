@@ -1,0 +1,139 @@
+# config.yml
+
+general:
+  start_date: "2012-01-01"
+  end_date: "2025-01-01"
+  vol_window: 5
+  mom_window: 5
+  for_window: 7
+  mom_1: 1
+  mean_threshold: 2
+  filter_start_date: "2023-02-01"
+  api_result_limit: 10
+  max_etfs: 10
+  initial_equity : 50_000
+
+api:
+  base_url: "https://api.polygon.io"
+  endpoints:
+    options_contracts: "/v3/reference/options/contracts"
+    daily_oc: "/v1/open-close/"
+  rate_limit_per_minute: 5
+
+expiration_rules:
+  friday_expiration_etfs:
+    - DIA
+    - VOO
+    - EEM
+    - EFA
+    - XLE
+    - XLF
+    - XLK
+    - XLV
+    - XLY
+    - XLP
+    - XLI
+    - XLU
+
+tickers:
+  - SPY
+  - QQQ
+  - IWM
+  - DIA
+  - VOO
+  - EEM
+  - EFA
+  - MDY
+  - IJH
+  - IJR
+  - XLE
+  - XLF
+  - XLK
+  - XLV
+  - XLY
+  - XLP
+  - XLI
+  - XLU
+  - XLB
+  - XLRE
+  - VWO
+  - FXI
+  - EWY
+  - EWJ
+  - EWZ
+  - EWW
+  - EWG
+  - INDA
+  - FEZ
+  - EWH
+  - TLT
+  - LQD
+  - HYG
+  - JNK
+  - GOVT
+  - BND
+  - TIP
+  - IEF
+  - SHY
+  - SJNK
+  - GLD
+  - SLV
+  - USO
+  - DBC
+  - PLL
+  - PPLT
+  - CORN
+  - WEAT
+  - DBA
+  - UCO
+  - VIXY
+  - VXX
+  - UVXY
+  - SVXY
+  - USMV
+  - ACWV
+  - TAIL
+  - SPLV
+  - JEPI
+  - WTMF
+  - TQQQ
+  - SQQQ
+  - UPRO
+  - SSO
+  - SPXL
+  - SPXS
+  - URTY
+  - TNA
+  - TZA
+  - VIG
+  - DVY
+  - SCHD
+  - SDY
+  - HDV
+  - VYM
+  - NOBL
+  - DGRW
+  - PGX
+  - SDIV
+  - ARKK
+  - ARKW
+  - ARKG
+  - BOTZ
+  - ICLN
+  - SKYY
+  - LIT
+  - SOXX
+  - SMH
+  - CNRG
+  - BITO
+  - XBTF
+  - BTF
+  - BLOK
+  - BKCH
+  - ESGU
+  - EFIV
+  - ESGV
+  - NULV
+  - DMXF
+
+

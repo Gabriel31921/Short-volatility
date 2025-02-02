@@ -1,5 +1,6 @@
 import datetime
 import pickle
+import yaml
 import os
 
 import pandas as pd
@@ -9,31 +10,26 @@ import matplotlib.pyplot as plt
 
 from datetime import datetime
 
-end = datetime.now().strftime('%Y-%m-%d')
-etf_data = {}
-
 ### Important!!
 # Somehow, somewhy, this code raises an error about columns not being there or ETF being delisted or something else.
 # Don't mind the error, run it again. I don't know why it does that, but it does.
 # Once you run it again, the code should work. Should.
 
+directory_path = os.getenv("short_volatility_path")
+Config_path = os.path.join(directory_path, "config.yaml")
+with open(Config_path, "r") as file:
+    config = yaml.safe_load(file)
 
-tickers = ['SPY', 'QQQ', 'IWM', 'DIA', 'VOO', 'EEM', 'EFA', 'MDY', 'IJH', 'IJR',
-        'XLE', 'XLF', 'XLK', 'XLV', 'XLY', 'XLP', 'XLI', 'XLU', 'XLB', 'XLRE',
-        'VWO', 'FXI', 'EWY', 'EWJ', 'EWZ', 'EWW', 'EWG', 'INDA', 'FEZ', 'EWH',
-        'TLT', 'LQD', 'HYG', 'JNK', 'GOVT', 'BND', 'TIP', 'IEF', 'SHY', 'SJNK',
-        'GLD', 'SLV', 'USO', 'DBC', 'PLL', 'PPLT', 'CORN', 'WEAT', 'DBA', 'UCO',
-        'VIXY', 'VXX', 'UVXY', 'SVXY', 'USMV', 'ACWV', 'TAIL', 'SPLV', 'JEPI', 'WTMF',
-        'TQQQ', 'SQQQ', 'UPRO', 'SSO', 'SPXL', 'SPXS', 'URTY', 'TNA', 'TZA',
-        'VIG', 'DVY', 'SCHD', 'SDY', 'HDV', 'VYM', 'NOBL', 'DGRW', 'PGX', 'SDIV',
-        'ARKK', 'ARKW', 'ARKG', 'BOTZ', 'ICLN', 'SKYY', 'LIT', 'SOXX', 'SMH', 'CNRG',
-        'BITO', 'XBTF', 'BTF', 'BLOK', 'BKCH',
-        'ESGU', 'EFIV', 'ESGV', 'NULV', 'DMXF']
+start_date = config["general"]["start_date"]
+end_date = config["general"]["end_date"]
+tickers = config["tickers"]
+
+etf_data = {}
 
 for idx, ticker in enumerate(tickers, start=1):
     etf_data[idx] = {
         "ticker" : ticker,
-        "data" : yf.Ticker(ticker).history(start='2012-01-01', end=end, actions=True, auto_adjust=True) 
+        "data" : yf.Ticker(ticker).history(start=start_date, end=end_date, actions=True, auto_adjust=True) 
         #Actions is whether to include dividens and splits, it's True by default.
         #For easier manipulation, in case some ETFs have and adjusted close, the auto_adjust makes the Close being automatically adjusted.
     }
@@ -48,10 +44,10 @@ for idx, ticker in enumerate(tickers, start=1):
 #   2 : ...
 #}
 
-vol_window = 5 #Number of periods for vol calculations.
-mom_window = 5 #Number of periods for momentum calculations.
-for_window = 7 #Number of periods for the forecasting.
-mom_1 = 1 #First momentum thresold, in percentages of move.
+vol_window = config["general"]["vol_window"] #Number of periods for vol calculations.
+mom_window = config["general"]["mom_window"] #Number of periods for momentum calculations.
+for_window = config["general"]["for_window"] #Number of periods for the forecasting.
+mom_1 = config["general"]["mom_1"] #First momentum thresold, in percentages of move.
 
 x = 0 #This varible is for testing.
 
@@ -183,9 +179,8 @@ if x == 0:
     # The expected value here should help answer whether the forecasted moves align with actual market pricing.
 
 # Create a set of ETF names with "Mean_Forecast_Move" > "thresold" from the results list
-mean_thresold = 2
-excluded_etfs = {res["ETF_Name"] for res in results if res["Mean_Forecast_Move"] > mean_thresold}
-
+mean_threshold = config["general"]["mean_threshold"]
+excluded_etfs = {res["ETF_Name"] for res in results if res["Mean_Forecast_Move"] > mean_threshold}
 
 # Filtering the dataset to create a dictionary of filtered ETFs for further analysis.
 # This dictionary will only include relevant columns for the "Signal_1" data.
@@ -197,7 +192,7 @@ for index, etf_info in etf_data.items():
 
     # Skip ETFs that are in the exclusion set
     if name in excluded_etfs:
-        print(f"Excluding ETF {name} due to high Mean_Forecast_Move (>{mean_thresold}).")
+        print(f"Excluding ETF {name} due to high Mean_Forecast_Move (>{mean_threshold}).")
         continue
 
     # Filter rows where 'Signal_1' is True, i.e., matching the criteria set earlier.
@@ -214,8 +209,7 @@ print(ETF_filtered['SPY'].head())
 
 # Save the filtered dataset to a pickle file for later use.
 # The file path is fetched from an environment variable (personalized setup).
-Path = os.getenv("Short_Volatility_Path")
-Path = os.path.join(Path, "ETF_filtered.pkl")
+Path = os.path.join(directory_path, "ETF_filtered.pkl")
 
 # Uncomment this block if you want to save the data for future runs.
 # This saves time by avoiding the need to re-run the entire analysis pipeline.

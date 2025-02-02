@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import yaml
 import pickle
 import requests
 import datetime
@@ -11,15 +12,23 @@ import matplotlib.pyplot as plt
 
 from datetime import datetime, timedelta
 
+directory_path = os.getenv("Short_Volatility_Path") # Personal path for data storage.
+Config_path = os.path.join(directory_path, "config.yaml")
+with open(Config_path, "r") as file:
+    config = yaml.safe_load(file)
+
 ### README
 # Be carefull when running this code, the free polygon version offers 5 API calls per minute.
 # Right now the loop is setted to break after the first iteration, this is, only with SPY data.
 # If you want to loop over all the ETFs, this is gonna take time, a lot of time.
 # So be carefull, we could be talking +10 hours at a rate of 5 API calls per minute.
 
+GENERAL_CONFIG = config['general']
+TICKERS = config['tickers']
+ETFs_Friday = config['expiration_rules']['friday_expiration_etfs']
+
 POLYGON_API_KEY = os.getenv("POLYGON_API_KEY") # Environmental variable for API key, keeping it secure.
-Path = os.getenv("Short_Volatility_Path") # Personal path for data storage.
-Path = os.path.join(Path, "ETF_filtered.pkl") # Path to the filtered ETF data.
+Path = os.path.join(directory_path, "ETF_filtered.pkl") # Path to the filtered ETF data.
 
 # Load the filtered ETF data from the pickle file.
 # This contains the pre-processed data with signals, forecasted moves, etc.
@@ -34,14 +43,11 @@ ETF_filtered_2023 = {}
 # This ensures we're working with the most recent market conditions.
 for ticker, df in ETF_filtered.items():
     df = df.reset_index()  # Reset index for easier manipulation.
-    df_filtered = df[df["Date"].dt.year >= 2023]  # Filter rows where the year is 2023 or later.
+    df_filtered = df[df["Date"] >= "2023-02-01"]  # Filter rows where the year is 2023 or later.
     ETF_filtered_2023[ticker] = df_filtered.copy()  # Store the filtered data in the new dictionary.
     # We use .copy() here to create a new, independent DataFrame object. Without .copy(), 
     # df_filtered would be a view of the original DataFrame, and modifications to it could 
     # inadvertently affect the original data. This ensures data integrity.
-
-# Print the filtered data for SPY to verify the filtering process.
-print(ETF_filtered_2023['SPY'])
 
 ### To do:
 # Call the Polygon.io API to get option contracts for each signal.
@@ -63,14 +69,18 @@ print(ETF_filtered_2023['SPY'])
 # Measure overall portfolio profitability.
 
 # Define API endpoints and headers for Polygon.io.
-url = "https://api.polygon.io" 
-options_contracts_endpoint = "/v3/reference/options/contracts"  # Endpoint for option contracts.
-Daily_OC = "/v1/open-close/"  # Endpoint for daily open/close data.
-
+url = config["api"]["base_url"]
+options_contracts_endpoint = config["api"]["endpoints"]["options_contracts"]  # Endpoint for option contracts.
+Daily_OC = config["api"]["endpoints"]["daily_oc"]  # Endpoint for daily open/close data.
+rate_limit = config["api"]["rate_limit_per_minute"]
 headers = {"Authorization" : f"{POLYGON_API_KEY}"}  # Authorization header for API requests.
+api_limit = config["general"]["api_result_limit"]
+max_etfs = config["general"]["max_etfs"]
 
 # Dictionary to store portfolio P&L for each ETF.
 Portfolio_PL = {}
+
+ETFs_looped = 0
 
 # Loop through each ETF and its filtered data.
 for ticker, data in ETF_filtered_2023.items():
@@ -87,19 +97,39 @@ for ticker, data in ETF_filtered_2023.items():
         strike = round(data.iloc[row]['Close'])  # Round Close price to get the strike.
         # We round the Close price to the nearest integer because option strikes are typically 
         # set at whole numbers. This ensures we're working with realistic, tradable strikes.
-        expiration_date = (data.iloc[row]['Date'] + timedelta(days=7)).strftime('%Y-%m-%d')  # Expiration date is 7 days after signal date.
-        # We use 7 days as the expiration period to simulate weekly options, which are commonly 
-        # traded and provide a good balance between liquidity and time decay.
-        Strikes.append(strike)  # Store the strike price.
+        signal_date = data.iloc[row]['Date']  # Date when the trading signal occurred
+        
+        # --- Expiration Date Calculation Logic ---
+        if ticker in ETFs_Friday:
+            # Special handling for Friday-expiration ETFs
+            # Python weekday(): Monday = 0, Sunday = 6
+            weekday = signal_date.weekday()
+            
+            if weekday == 0:  # Monday
+                # For Monday signals: use same week's Friday (+4 days)
+                expiration_date = signal_date + timedelta(days=4)
+            else:
+                # For Tue-Sun signals: calculate days to next week's Friday
+                # (4 - weekday) % 7 = days until Friday in current week
+                # +7 to push to next week if past Friday
+                days_until_next_friday = (4 - weekday) % 7
+                expiration_date = signal_date + timedelta(days=days_until_next_friday + 7)
+        else:
+            # Default behavior for non-Friday ETFs
+            # Use original 7-day expiration logic
+            expiration_date = signal_date + timedelta(days=7)
 
-        # API call to get Call option contracts.
+        # Format for API requests
+        expiration_date = expiration_date.strftime('%Y-%m-%d')
+        Strikes.append(strike)  
+
         params = {
             "underlying_ticker": ticker,
             "contract_type": "call",
             "expiration_date": expiration_date,
             "strike_price": strike,
             "expired": "true",  # Include expired contracts.
-            "limit": 10,  # Limit results to 10.
+            "limit": api_limit,  # Limit results to 10.
             "sort": "expiration_date",  # Sort by expiration date.
         }
         full_url = url + options_contracts_endpoint
@@ -122,7 +152,7 @@ for ticker, data in ETF_filtered_2023.items():
         # Polygon.io has rate limits, so we sleep for 60 seconds after every 5 requests 
         # to stay within the allowed number of requests per minute.
         x += 1
-        if x == 5:
+        if x == rate_limit:
             x = 0
             time.sleep(60)
 
@@ -133,7 +163,7 @@ for ticker, data in ETF_filtered_2023.items():
             "expiration_date": expiration_date,
             "strike_price": strike,
             "expired": "true",
-            "limit": 10,
+            "limit": api_limit,
             "sort": "expiration_date",
         }
         response = requests.get(full_url, headers=headers, params=params)
@@ -153,7 +183,7 @@ for ticker, data in ETF_filtered_2023.items():
 
         # Rate limiting: Sleep after every 5 requests.
         x += 1
-        if x == 5:
+        if x == rate_limit:
             x = 0
             time.sleep(60)
 
@@ -202,7 +232,7 @@ for ticker, data in ETF_filtered_2023.items():
         date = (data.iloc[row]["Date"]).strftime("%Y-%m-%d")  # Format date for API request.
             
         x += 1
-        if x == 5:
+        if x == rate_limit:
             time.sleep(60)  # Sleep after every 5 requests.
             x = 0
         # Fetch Call option data.
@@ -211,7 +241,7 @@ for ticker, data in ETF_filtered_2023.items():
         Calls_Volume.append(call_volume)
             
         x += 1
-        if x == 5:
+        if x == rate_limit:
             time.sleep(60)  # Sleep after every 5 requests.
             x = 0
         # Fetch Put option data.
@@ -225,6 +255,8 @@ for ticker, data in ETF_filtered_2023.items():
     data['Put_Price'] = Puts_Price
     data['Put_Volume'] = Puts_Volume
 
+    data.dropna(inplace = True)
+
     # Calculate straddle premium and payoff.
     data['Premium'] = data['Call_Price'] + data['Put_Price']  # Total premium received.
     data['Payoff'] = np.maximum(data['Future_Close'] - data['Strike'], 0) + \
@@ -232,22 +264,21 @@ for ticker, data in ETF_filtered_2023.items():
     data['PL'] = data['Premium'] - data['Payoff']  # P&L for each straddle position.
 
     # Calculate total P&L for the ETF.
+
     Premium = data['Premium'].tolist()
     Payoff = data['Payoff'].tolist()
     PL = data['PL'].tolist()
     final_PL = sum(PL)
     print(f"Result of the strategy on {ticker}: {final_PL}")  # Print the total P&L.
 
-    # Store the P&L list in the portfolio dictionary.
-    Portfolio_PL[ticker] = {
-        "Premium" : Premium,
-        "Payoff" : Payoff,
-        "PL" : PL
-    }
-    break
+    filtered_data = data.loc[:, data.columns.intersection(['Date', 'Premium', 'Payoff', 'PL'])]
+    Portfolio_PL[ticker] = filtered_data
 
-Path = os.getenv("Short_Volatility_Path") # Personal path for data storage.
-Path = os.path.join(Path, "Portfolio_PL.pkl") # Path to the Portfolio_PL data.
+    ETFs_looped += 1
+    if ETFs_looped == max_etfs:
+        break
+
+Path = os.path.join(directory_path, "Portfolio_PL.pkl") # Path to the Portfolio_PL data.
 
 with open(Path, 'wb') as f:
     pickle.dump(Portfolio_PL, f)
