@@ -1,0 +1,15 @@
+# config.yaml
+
+general:
+  start_date: "2012-01-01"
+  end_date: "2025-01-01"
+
+api:
+  base_url: "https://api.polygon.io"
+  endpoints: 
+    options_contracts: "/v3/reference/options/contracts"
+    daily_oc: "/v1/open-close/"
+  rate_limit_per_minute: 5
+
+ETFs:
+  - SPY

@@ -15,7 +15,8 @@ from datetime import datetime
 # Don't mind the error, run it again. I don't know why it does that, but it does.
 # Once you run it again, the code should work. Should.
 
-directory_path = os.getenv("short_volatility_path")
+directory_path = os.getenv("Short_Volatility_Path") # Personal path for data storage.
+directory_path = directory_path + "/On ETFs/"
 Config_path = os.path.join(directory_path, "config.yaml")
 with open(Config_path, "r") as file:
     config = yaml.safe_load(file)
@@ -137,12 +138,12 @@ print(f'The number of days of the initial data is of: {len(data)}\n'
 
 x = 1  # Testing variable again. Used for controlling execution of this segment.
 if x == 0:
-    def straddle_profit(move, asset):
+    def straddle_profit(move, asset, P1, P2):
         # Define premiums and strike prices for the straddle.
         # These are hardcoded for now, based on SPY prices on 26/01.
         premiums = {
-            'P1': 4.51,  # Call premium
-            'P2': 3.55   # Put premium
+            'P1': P1,  # Call premium
+            'P2': P2   # Put premium
         }
         strike = 607  # The strike price is the same for both the call and the put.
 
@@ -169,7 +170,7 @@ if x == 0:
 
     # Compute straddle profits for all forecasted moves in the dataset.
     # Using SPY's adjusted price as of 26/01 for this calculation (607.47).
-    profits = [straddle_profit(filtered_data.iloc[i]['Forecast_Move'], 607.47) for i in range(len(filtered_data))]
+    profits = [straddle_profit(filtered_data.iloc[i]['Forecast_Move'], 607.47, 4.51, 3.55) for i in range(len(filtered_data))]
 
     # Calculate the expected value (mean) of the straddle profits.
     # This gives an idea of whether the strategy is net profitable in this scenario.

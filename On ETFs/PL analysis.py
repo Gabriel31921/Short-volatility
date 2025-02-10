@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 # Define the path for data storage.
 # The path is constructed using an environment variable to keep it flexible and secure.
 directory_path = os.getenv("Short_Volatility_Path") # Personal path for data storage.
+directory_path = directory_path + "/On ETFs/"
 Portfolio_path = os.path.join(directory_path, "Portfolio_PL.pkl")  # Path to the portfolio P&L data.
 Config_path = os.path.join(directory_path, "config.yaml")
 with open(Config_path, "r") as file:

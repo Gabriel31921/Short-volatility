@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
 directory_path = os.getenv("Short_Volatility_Path") # Personal path for data storage.
+directory_path = directory_path + "/On ETFs/"
 Config_path = os.path.join(directory_path, "config.yaml")
 with open(Config_path, "r") as file:
     config = yaml.safe_load(file)
@@ -23,8 +24,6 @@ with open(Config_path, "r") as file:
 # If you want to loop over all the ETFs, this is gonna take time, a lot of time.
 # So be carefull, we could be talking +10 hours at a rate of 5 API calls per minute.
 
-GENERAL_CONFIG = config['general']
-TICKERS = config['tickers']
 ETFs_Friday = config['expiration_rules']['friday_expiration_etfs']
 
 POLYGON_API_KEY = os.getenv("POLYGON_API_KEY") # Environmental variable for API key, keeping it secure.
@@ -202,9 +201,9 @@ for ticker, data in ETF_filtered_2023.items():
     time.sleep(60)  # Sleep to avoid API rate limits.
 
     # Function to fetch option data (Close price and Volume) for a specific ticker and date.
-    def fetch_option_data(ticker, expiration_date, option_type, url, headers):
+    def fetch_option_data(ticker, date, option_type, url, headers):
         """Fetch option data for a specific ticker and expiration date."""
-        full_url = f"{url}{Daily_OC}{ticker}/{expiration_date}"
+        full_url = f"{url}{Daily_OC}{ticker}/{date}"
         params = {"adjusted": True}  # Use adjusted prices.
 
         try:
