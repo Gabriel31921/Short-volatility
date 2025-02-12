@@ -30,7 +30,7 @@ etf_data = {}
 for idx, ticker in enumerate(tickers, start=1):
     etf_data[idx] = {
         "ticker" : ticker,
-        "data" : yf.Ticker(ticker).history(start=start_date, end=end_date, actions=True, auto_adjust=True) 
+        "data" : yf.Ticker(ticker).history(start=start_date, end=end_date, actions=True, auto_adjust=False) 
         #Actions is whether to include dividens and splits, it's True by default.
         #For easier manipulation, in case some ETFs have and adjusted close, the auto_adjust makes the Close being automatically adjusted.
     }
@@ -214,5 +214,5 @@ Path = os.path.join(directory_path, "ETF_filtered.pkl")
 
 # Uncomment this block if you want to save the data for future runs.
 # This saves time by avoiding the need to re-run the entire analysis pipeline.
-# with open(Path, 'wb') as f:
-#     pickle.dump(ETF_filtered, f)
+with open(Path, 'wb') as f:
+    pickle.dump(ETF_filtered, f)
